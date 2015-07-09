@@ -25,7 +25,7 @@ class SciCatalog:
     refDictFile = 'reference_dictionary'
     refFileSuffix = 'txt'
 
-    def __init__(self, path, values=None, errpos=None, errneg=None, refs=None, refDict={}, **kwargs):
+    def __init__(self, path, values=None, errpos=None, errneg=None, refs=None, refDict={}, index=None, columns=None):
         """
         Creates an empty SciCatalog object by intializing the four pandas DataFrame tables and a reference dictionary
         that are kept synced to the disk as changes are made.
@@ -79,24 +79,25 @@ class SciCatalog:
                 self.backup()
 
         else:
-            # create assorted tables
-            self.values = pd.DataFrame(data=values, **kwargs)
-            self.errpos = pd.DataFrame(data=errpos, **kwargs)
-            self.errneg = pd.DataFrame(data=errneg, **kwargs)
-            self.refs   = pd.DataFrame(data=refs  , **kwargs)
+            # functions to create DataFrames filled with null or good data as appropriate
+            nullDF = lambda val : self._fillDF(val, columns, index)
+            goodDF = lambda data: pd.DataFrame(data=data, columns=columns, index=index)
+            DF = lambda data, val: nullDF(val) if data is None else goodDF(data)
+
+            # create tables
+            self.tables = map(DF, [values, errpos, errneg, refs], self.nullValues)
+            self.values, self.errpos, self.errneg, self.refs = self.tables
 
             # check that all reference keys are defined
             for ref in self.refs.values.ravel():
                 self.checkRef(ref)
-
-            # store dictionaries of tables and their paths for easy updating down the line
-            self.tables = [self.values, self.errpos, self.errneg, self.refs]
 
             # write to disk
             if not os.path.exists(path):
                 os.mkdir(path)
             if not os.path.exists(self.archive):
                 os.mkdir(self.archive)
+
             self.save()
 
 
@@ -196,7 +197,7 @@ class SciCatalog:
         """
         Check whether there is an entry in the reference dictionary for refKey. Issue warning if not.
         """
-        if refkey not in self.refDict:
+        if refkey != 'none' and refkey not in self.refDict:
             warn("The reference key {} is not in the reference dictionary for this catalog. "
                  "You can add it with the `addRefEntry` method.".format(refkey))
 
@@ -279,6 +280,14 @@ class SciCatalog:
         with open(path, 'w') as f:
             for key, ref in self.refDict.iteritems():
                 f.write('{} : {}\n'.format(key, ref))
+
+    @classmethod
+    def _fillDF(cls, val, columns, index):
+        """
+        Create a DataFrame filled with the same values.
+        """
+        data = [[val]*len(columns)]*len(index)
+        return pd.DataFrame(data=data, columns=columns, index=index)
 
 
     @classmethod
