@@ -25,9 +25,10 @@ Here's how you'd go about creating a SciCatalog if you already have your data:
     >>> columns = ['col1', 'col2', 'col3']
     
     >>> # abbreviated references and a dictionary defining the abbreviations
-    >>> refs = [['a', 'b', 'c'], ['d', 'e', 'f']]
+    >>> refs = ['a', 'b', 'c', 'd', 'e', 'f']
     >>> ref_definitions = ['blah_' + s for s in refs]
     >>> refDict = dict(zip(refs, ref_definitions))
+    >>> refs = [refs[:3], refs[3:]]
     
     >>> # create the catalog. This creates a directory called 'cat' in the present
     >>> # working directory and puts a series of human-readable files recording
@@ -94,10 +95,7 @@ Here's how you'd go about creating a SciCatalog if you already have your data:
     >>> cat.refs
            col1 col2 col3  col4
     thing1    a    b    c  none
-    thing2    d    g    f  none
-    
-    >>> cat.addR
-    cat.addRefEntry  cat.addRow       
+    thing2    d    g    f  none    
     
     >>> cat.addRow('thing3')
     
