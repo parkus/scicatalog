@@ -1,1 +1,3 @@
-__author__ = 'rolo7566'
+__author__ = 'Parke Loyd'
+
+from scicatalog import SciCatalog
