@@ -1,5 +1,5 @@
 scicatalog
-----------
+==========
 
 A module containing a single class for handling catalogs of scientific data in a way that is easily extensible. 
 
@@ -12,7 +12,7 @@ SciCatalogs are not intended to handle large or even moderately sized databases.
 Written by Parke Loyd, 2015/07.
 
 Example
-=======
+-------
 Here's how you'd go about creating a SciCatalog if you already have your data:
 
     >>> import scicatalog as sc
@@ -132,7 +132,7 @@ Here's how you'd go about creating a SciCatalog if you already have your data:
     thing3       NaN        NaN       NaN   NaN
 
 Example 2
-=========
+---------
 You're probably more likely to initialize a table and then fill it in as you find the data you need in the scientific literature (or at least that's what I'm doing with stellar properties). This is how that happens.
 
     >>> import scicatalog.scicatalog as sc
