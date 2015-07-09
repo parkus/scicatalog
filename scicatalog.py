@@ -304,6 +304,19 @@ class SciCatalog:
             tbl.to_csv(path)
 
 
+    def colnames(self):
+        """
+        Return a list of the column names.
+        """
+        return list(self.values.columns)
+
+    def indices(self):
+        """
+        Return a list of the indices (aka rows identifiers).
+        """
+        return list(self.values.index)
+
+
     def _saveRefDict(self, path=None):
         """
         Write the object's reference dictionary to the disk.
