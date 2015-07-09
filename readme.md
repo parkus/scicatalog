@@ -135,31 +135,31 @@ Example 2
 =========
 You're probably more likely to initialize a table and then fill it in as you find the data you need in the scientific literature (or at least that's what I'm doing with stellar properties). This is how that happens.
 
->>> import scicatalog.scicatalog as sc
->>> cat = sc.SciCatalog('cat', columns=['col1', 'col2', 'col3'], index=['thing1', 'thing2'])
->>> cat.set('thing1', ['col1', 'col2'], value=[1,2], errpos=[3,4])
->>> cat.set(['thing1', 'thing2'], 'col3', value=[-1, -2], ref=['c', 'd'])
-UserWarning: The reference key c is not in the reference dictionary for this catalog. You can add it with the `addRefEntry` method.
-  "You can add it with the `addRefEntry` method.".format(refkey))
-UserWarning: The reference key d is not in the reference dictionary for this catalog. You can add it with the `addRefEntry` method.
-  "You can add it with the `addRefEntry` method.".format(refkey))
-
->>> cat.values
-        col1  col2  col3
-thing1     1     2    -1
-thing2   NaN   NaN    -2
-
->>> cat.errpos
-        col1  col2  col3
-thing1     3     4   NaN
-thing2   NaN   NaN   NaN
-
->>> cat.errneg
-        col1  col2  col3
-thing1   NaN   NaN   NaN
-thing2   NaN   NaN   NaN
-
->>> cat.refs
-        col1  col2 col3
-thing1  none  none    c
-thing2  none  none    d
+    >>> import scicatalog.scicatalog as sc
+    >>> cat = sc.SciCatalog('cat', columns=['col1', 'col2', 'col3'], index=['thing1', 'thing2'])
+    >>> cat.set('thing1', ['col1', 'col2'], value=[1,2], errpos=[3,4])
+    >>> cat.set(['thing1', 'thing2'], 'col3', value=[-1, -2], ref=['c', 'd'])
+    UserWarning: The reference key c is not in the reference dictionary for this catalog. You can add it with the `addRefEntry` method.
+      "You can add it with the `addRefEntry` method.".format(refkey))
+    UserWarning: The reference key d is not in the reference dictionary for this catalog. You can add it with the `addRefEntry` method.
+      "You can add it with the `addRefEntry` method.".format(refkey))
+    
+    >>> cat.values
+            col1  col2  col3
+    thing1     1     2    -1
+    thing2   NaN   NaN    -2
+    
+    >>> cat.errpos
+            col1  col2  col3
+    thing1     3     4   NaN
+    thing2   NaN   NaN   NaN
+    
+    >>> cat.errneg
+            col1  col2  col3
+    thing1   NaN   NaN   NaN
+    thing2   NaN   NaN   NaN
+    
+    >>> cat.refs
+            col1  col2 col3
+    thing1  none  none    c
+    thing2  none  none    d
