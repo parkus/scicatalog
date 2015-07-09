@@ -109,7 +109,9 @@ class SciCatalog:
         Parameters
         ----------
         index, col: str
-            Index and column locating the item in the catalog (e.g. 'alpha cen', 'distance')
+            Index and column locating the item in the catalog (e.g. 'alpha cen', 'distance'). Either index or column
+            can be an iterable to allow setting values for the multiple rows in the same column or multiple columns
+            of the same row at once, but not both!
         value, errpos, errneg : flt
             Value and errors (positive and negative) for the item.
         ref : str
@@ -119,13 +121,45 @@ class SciCatalog:
         -------
         None
         """
+        data = [value, errpos, errneg, ref]
+
+        iterI, iterC = [hasattr(x, '__iter__') for x in [index, col]]
+
+        if iterI and iterC:
+            raise TypeError('Only one of index and col can be iterable.')
+
+        def groomLen(n):
+            for i in range(len(data)):
+                if data[i] is None:
+                    data[i] = [data[i]]*n
+                elif len(data[i]) != n:
+                    raise ValueError('Given your input for index and col, value, errpos, errneg, and ref must all be '
+                                     'iterables of length {} or be None.'.format(n))
+
+        if iterI:
+            groomLen(len(index))
+            for i, v, ep, en, r in zip(index, *data):
+                self._setSingle(i, col, v, ep, en, r)
+        elif iterC:
+            groomLen(len(col))
+            for c, v, ep, en, r in zip(col, *data):
+                self._setSingle(index, c, v, ep, en, r)
+        else:
+            self._setSingle(index, col, *data)
+
+        self.save()
+
+
+    def _setSingle(self, index, col, value=None, errpos=None, errneg=None, ref=None):
+        """
+        Like set method, but works with only a single value.
+        """
         kwargs = dict(zip(self.keys, [value, errpos, errneg, ref]))
         for i, key in enumerate(self.keys):
             if kwargs[key] is not None:
                 self.tables[i][col][index] = kwargs[key]
             else:
                 self.tables[i][col][index] = self.nullValues[i]
-            self.tables[i].to_csv(self.paths[i])
 
         if 'ref' in kwargs:
             self.checkRef(kwargs['ref'])
@@ -152,6 +186,7 @@ class SciCatalog:
         Print an item from the catalog with value, errors, and reference.
         """
         print self.strItem(index, col)
+
 
     def backup(self):
         """
@@ -197,7 +232,7 @@ class SciCatalog:
         """
         Check whether there is an entry in the reference dictionary for refKey. Issue warning if not.
         """
-        if refkey != 'none' and refkey not in self.refDict:
+        if refkey not in ['none', None] and refkey not in self.refDict:
             warn("The reference key {} is not in the reference dictionary for this catalog. "
                  "You can add it with the `addRefEntry` method.".format(refkey))
 
@@ -280,6 +315,7 @@ class SciCatalog:
         with open(path, 'w') as f:
             for key, ref in self.refDict.iteritems():
                 f.write('{} : {}\n'.format(key, ref))
+
 
     @classmethod
     def _fillDF(cls, val, columns, index):
