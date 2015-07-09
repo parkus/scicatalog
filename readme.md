@@ -135,7 +135,7 @@ Example 2
 ---------
 You're probably more likely to initialize a table and then fill it in as you find the data you need in the scientific literature (or at least that's what I'm doing with stellar properties). This is how that happens.
 
-    >>> import scicatalog.scicatalog as sc
+    >>> import scicatalog as sc
     >>> cat = sc.SciCatalog('cat', columns=['col1', 'col2', 'col3'], index=['thing1', 'thing2'])
     >>> cat.set('thing1', ['col1', 'col2'], value=[1,2], errpos=[3,4])
     >>> cat.set(['thing1', 'thing2'], 'col3', value=[-1, -2], ref=['c', 'd'])
