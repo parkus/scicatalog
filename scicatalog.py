@@ -3,6 +3,7 @@ import os
 import numpy as np
 from warnings import warn
 import time
+import getpass
 
 class SciCatalog:
     """
@@ -24,6 +25,7 @@ class SciCatalog:
     nullValues = [np.nan, np.nan, np.nan, 'none']
     refDictFile = 'reference_dictionary'
     refFileSuffix = 'txt'
+    accessFile = 'user_accessing.txt'
 
     def __init__(self, path, values=None, errpos=None, errneg=None, refs=None, refDict={}, index=None, columns=None):
         """
@@ -58,6 +60,7 @@ class SciCatalog:
 
         # store auxilliary data
         self.path = path
+        self.name = os.path.basename(path)
         self.paths  = self._tablepaths(path)
         self.archive = os.path.join(path, 'archive')
         self.refDict = refDict
@@ -65,9 +68,25 @@ class SciCatalog:
 
         # either load or create the SciCat table as appropriate
         if os.path.exists(path):
+            # try to prevent possible editing by multiple users at the same time by looking for or creating a file
+            # that just contains the name of the user, to be later removed with the close() method.
+            self._accessPath = os.path.join(path, self.accessFile)
+            if os.path.exists(self._accessPath):
+                with open(self._accessPath) as f:
+                    user = f.readline().strip()
+                raise Exception('Cannot load the catalog because it is currently in use by {}'.format(user))
+            else:
+                print("IMPORTANT: You MUST use execute the command '{c}.close()' or 'del {c}' when you are done "
+                      "modifying the {c} catalog or other users will not be able to open and edit it."
+                      "".format(c=self.name))
+                with open(self._accessPath, 'w') as f:
+                    f.write(getpass.getuser())
+
+            # load in the table data
             self.tables = [pd.DataFrame.from_csv(p) for p in self.paths]
             self.values, self.errpos, self.errneg, self.refs = self.tables
 
+            # load in the refernce dictionary
             refs, defs = [], []
             with open(self.refDictPath) as f:
                 lines = f.read().splitlines()
@@ -148,6 +167,22 @@ class SciCatalog:
             self._setSingle(index, col, *data)
 
         self.save()
+
+
+    def __del__(self):
+        self.close()
+        del self
+
+
+    def __exit__(self):
+        self.close()
+
+
+    def close(self):
+        """
+        Close the catalog, making it available for other users to open and edit.
+        """
+        os.remove(self._accessPath)
 
 
     def _setSingle(self, index, col, value=None, errpos=None, errneg=None, ref=None):
