@@ -352,6 +352,18 @@ class SciCatalog:
         return list(self.values.index)
 
 
+    def renameCol(self, oldname, newname):
+        for tbl in self.tables:
+            tbl.rename(columns={oldname : newname}, inplace=True)
+        self.save()
+
+
+    def renameRow(self, oldname, newname):
+        for tbl in self.tables:
+            tbl.rename(index={oldname : newname}, inplace=True)
+        self.save()
+
+
     def _saveRefDict(self, path=None):
         """
         Write the object's reference dictionary to the disk.
