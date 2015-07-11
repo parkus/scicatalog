@@ -189,6 +189,13 @@ class SciCatalog:
         """
         Like set method, but works with only a single value.
         """
+        if index not in self.values.index:
+            raise KeyError("{} is not a row in the table. You must use the 'addRow' method to add a row before "
+                           "setting values in it.".format(index))
+        if col not in self.values.columns:
+            raise KeyError("{} is not a column in the table. You must use the 'addCol' method to add a column before "
+                           "setting values in it.".format(col))
+
         kwargs = dict(zip(self.keys, [value, errpos, errneg, ref]))
         for i, key in enumerate(self.keys):
             if kwargs[key] is not None:
