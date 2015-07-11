@@ -74,9 +74,12 @@ class SciCatalog:
             if os.path.exists(self._accessPath):
                 with open(self._accessPath) as f:
                     user = f.readline().strip()
-                raise Exception('Cannot load the catalog because it is currently in use by {}'.format(user))
+                raise Exception('Cannot load the catalog because it is currently in use by {u}. If you are '
+                                'certain that {u} is no longer modifying the catalog and just forgot to call the '
+                                '"close" method (better check with him/her!), you can delete the {a} file in the '
+                                'catalog directory to regain access.'.format(u=user, a=self.accessFile))
             else:
-                print("IMPORTANT: You MUST use execute the command '{c}.close()' or 'del {c}' when you are done "
+                print("IMPORTANT: You MUST use execute the command '{c}.close()' when you are done "
                       "modifying the {c} catalog or other users will not be able to open and edit it."
                       "".format(c=self.name))
                 with open(self._accessPath, 'w') as f:
@@ -118,6 +121,14 @@ class SciCatalog:
                 os.mkdir(self.archive)
 
             self.save()
+
+
+    def __getitem__(self, key):
+        return self.values[key]
+
+
+    def __len__(self):
+        return len(self.values)
 
 
     def set(self, index, col, value=None, errpos=None, errneg=None, ref=None):
@@ -169,15 +180,6 @@ class SciCatalog:
         self.save()
 
 
-    def __del__(self):
-        self.close()
-        del self
-
-
-    def __exit__(self):
-        self.close()
-
-
     def close(self):
         """
         Close the catalog, making it available for other users to open and edit.
@@ -205,15 +207,6 @@ class SciCatalog:
 
         if 'ref' in kwargs:
             self.checkRef(kwargs['ref'])
-
-
-    def __getitem__(self, key):
-        return self.values[key]
-
-
-    def __len__(self):
-        return len(self.values)
-
 
     def strItem(self, index, col):
         """
