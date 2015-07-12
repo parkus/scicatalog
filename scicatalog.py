@@ -131,6 +131,19 @@ class SciCatalog:
         return len(self.values)
 
 
+    def __eq__(self, other):
+
+        result = True
+        for tbl0, tbl1 in zip(self.tables, other.tables):
+            if any(tbl0 != tbl1):
+                result = False
+
+        if self.refDict != other.refDict:
+            result = False
+
+        return result
+
+
     def set(self, index, col, value=None, errpos=None, errneg=None, ref=None):
         """
         Set the value of an item in the catalog in-place, using null values for any keywords with None values and save
