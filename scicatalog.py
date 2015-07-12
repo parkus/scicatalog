@@ -78,7 +78,7 @@ class SciCatalog:
                                 'certain that {u} is no longer modifying the catalog and just forgot to call the '
                                 '"close" method (better check with him/her!), you can delete the {a} file in the '
                                 'catalog directory to regain access.'.format(u=user, a=self.accessFile))
-            else:
+            elif 'archive' not in self.path:
                 print("IMPORTANT: You MUST use execute the command '{c}.close()' when you are done "
                       "modifying the {c} catalog or other users will not be able to open and edit it."
                       "".format(c=self.name))
@@ -119,7 +119,6 @@ class SciCatalog:
                 os.mkdir(path)
             if not os.path.exists(self.archive):
                 os.mkdir(self.archive)
-
             self.save()
 
 
@@ -133,15 +132,33 @@ class SciCatalog:
 
     def __eq__(self, other):
 
-        result = True
+        # check that they have the same columns and indices
+        if sorted(self.colnames()) != sorted(other.colnames()):
+            return False
+        if sorted(self.indices()) != sorted(self.indices()):
+            return False
+
+        # compare the values in each column, treating null values as equivalent and just checking if floats are within
+        # tolerance
         for tbl0, tbl1 in zip(self.tables, other.tables):
-            if any(tbl0 != tbl1):
-                result = False
+            for col in tbl0.columns:
+                bothnull = tbl0[col].isnull() & tbl1[col].isnull()
+                if tbl0[col].dtype == float:
+                    ne = ~np.isclose(tbl0[col], tbl1[col])
+                else:
+                    ne = tbl0[col] != tbl1[col]
+                ne[bothnull.values] = False
+                if ne.any():
+                    return False
 
         if self.refDict != other.refDict:
-            result = False
+            return False
 
-        return result
+        return True
+
+
+    def __ne__(self, other):
+        return not self == other
 
 
     def set(self, index, col, value=None, errpos=None, errneg=None, ref=None):
@@ -197,6 +214,20 @@ class SciCatalog:
         """
         Close the catalog, making it available for other users to open and edit.
         """
+
+        # if the catalog hasn't changed during this session, delete the backup made when it was opened
+        # check if it hasn't changed by comparing it to the backup made when it was opened
+        archivePaths = self._listpaths(self.archive)
+        backupDirs = filter(os.path.isdir, archivePaths)
+        if len(backupDirs) > 0:
+            lastBackupDir = max(backupDirs)
+            backup = SciCatalog(lastBackupDir)
+            if backup == self:
+                for f in self._listpaths(lastBackupDir):
+                    os.remove(f)
+                os.rmdir(lastBackupDir)
+
+        # remove the file showing that the user is accessing the catalog
         os.remove(self._accessPath)
 
 
@@ -240,6 +271,7 @@ class SciCatalog:
         """
         Backup the catalog by saving a copy of it in the archive subdirectory in a date+time stamped directory.
         """
+
         strTime = time.strftime("%Y%m%dT%H%M%S")
         archiveDir = os.path.join(self.path, 'archive', strTime)
         os.mkdir(archiveDir)
@@ -388,6 +420,11 @@ class SciCatalog:
         with open(path, 'w') as f:
             for key, ref in self.refDict.iteritems():
                 f.write('{} : {}\n'.format(key, ref))
+
+    @classmethod
+    def _listpaths(cls, path):
+        names = os.listdir(path)
+        return [os.path.join(path, name) for name in names]
 
 
     @classmethod
