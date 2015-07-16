@@ -257,7 +257,8 @@ class SciCatalog:
         Return a plain-text representation of the catalog item with the errors and reference.
         """
         i, c = index, col
-        return "{} (+{}, -{}) [{}]".format(self.values[i][c], self.errpos[i][c], self.errneg[i][c], self.refs[i][c])
+        return "{} (+{}, -{}) [{}]".format(self.values.loc[i,c], self.errpos.loc[i,c], self.errneg.loc[i,c],
+                                           self.refs.loc[i,c])
 
 
     def printItem(self, index, col):
