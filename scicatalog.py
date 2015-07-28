@@ -27,7 +27,8 @@ class SciCatalog:
     refFileSuffix = 'txt'
     accessFile = 'user_accessing.txt'
 
-    def __init__(self, path, values=None, errpos=None, errneg=None, refs=None, refDict={}, index=None, columns=None):
+    def __init__(self, path, values=None, errpos=None, errneg=None, refs=None, refDict={}, index=None, columns=None,
+                 readOnly=False):
         """
         Creates an empty SciCatalog object by intializing the four pandas DataFrame tables and a reference dictionary
         that are kept synced to the disk as changes are made.
@@ -43,6 +44,9 @@ class SciCatalog:
         refDict : dict
             A dictionary defining the various reference keys used. This is intended both for brevity in the reference
             table and possibly later use with BibTex... not sure if that will ever come to fruition in a useful way.
+        readOnly : True|False
+            If True, access the table in read only mode. This allows you to open the table even when it is in use by
+            another user, but prevents you from saving any changes you make to it.
 
         Other **kwargs will be passed along to DataFrame call. See DataFrame documentation for info, but important
         ones include index and columns for providing lists of indices and column names.
@@ -65,31 +69,36 @@ class SciCatalog:
         self.archive = os.path.join(path, 'archive')
         self.refDict = refDict
         self.refDictPath = os.path.join(path, self.refDictFile) + '.' + self.refFileSuffix
+        self.readOnly = readOnly
 
         # either load or create the SciCat table as appropriate
         if os.path.exists(path):
-            # try to prevent possible editing by multiple users at the same time by looking for or creating a file
-            # that just contains the name of the user, to be later removed with the close() method.
-            self._accessPath = os.path.join(path, self.accessFile)
-            if os.path.exists(self._accessPath):
-                with open(self._accessPath) as f:
-                    user = f.readline().strip()
-                raise Exception('Cannot load the catalog because it is currently in use by {u}. If you are '
-                                'certain that {u} is no longer modifying the catalog and just forgot to call the '
-                                '"close" method (better check with him/her!), you can delete the {a} file in the '
-                                'catalog directory to regain access.'.format(u=user, a=self.accessFile))
-            elif 'archive' not in self.path:
-                print("IMPORTANT: You MUST use execute the command '{c}.close()' when you are done "
-                      "modifying the {c} catalog or other users will not be able to open and edit it."
-                      "".format(c=self.name))
-                with open(self._accessPath, 'w') as f:
-                    f.write(getpass.getuser())
+            if self.readOnly:
+                print("Opening the catalog in read only mode. *You will not be able to save any changes you make to "
+                      "the catalog in this mode.* You do not need to call the close() method when finished.")
+            else:
+                # try to prevent possible editing by multiple users at the same time by looking for or creating a file
+                # that just contains the name of the user, to be later removed with the close() method.
+                self._accessPath = os.path.join(path, self.accessFile)
+                if os.path.exists(self._accessPath):
+                    with open(self._accessPath) as f:
+                        user = f.readline().strip()
+                    raise Exception('Cannot load the catalog because it is currently in use by {u}. If you are '
+                                    'certain that {u} is no longer modifying the catalog and just forgot to call the '
+                                    '"close" method (better check with him/her!), you can delete the {a} file in the '
+                                    'catalog directory to regain access.'.format(u=user, a=self.accessFile))
+                elif 'archive' not in self.path:
+                    print("IMPORTANT: You MUST use execute the command '{c}.close()' when you are done "
+                          "modifying the {c} catalog or other users will not be able to open and edit it."
+                          "".format(c=self.name))
+                    with open(self._accessPath, 'w') as f:
+                        f.write(getpass.getuser())
 
             # load in the table data
             self.tables = [pd.DataFrame.from_csv(p) for p in self.paths]
             self.values, self.errpos, self.errneg, self.refs = self.tables
 
-            # load in the refernce dictionary
+            # load in the reference dictionary
             refs, defs = [], []
             with open(self.refDictPath) as f:
                 lines = f.read().splitlines()
@@ -97,8 +106,9 @@ class SciCatalog:
             self.refDict = dict(pairs)
 
             # make a backup copy
-            if 'archive' not in path:
-                self.backup()
+            if not self.readOnly:
+                if 'archive' not in path:
+                    self.backup()
 
         else:
             # functions to create DataFrames filled with null or good data as appropriate
@@ -207,28 +217,29 @@ class SciCatalog:
         else:
             self._setSingle(index, col, *data)
 
-        self.save()
+        if not self.readOnly:
+            self.save()
 
 
     def close(self):
         """
         Close the catalog, making it available for other users to open and edit.
         """
+        if not self.readOnly:
+            # if the catalog hasn't changed during this session, delete the backup made when it was opened
+            # check if it hasn't changed by comparing it to the backup made when it was opened
+            archivePaths = self._listpaths(self.archive)
+            backupDirs = filter(os.path.isdir, archivePaths)
+            if len(backupDirs) > 0:
+                lastBackupDir = max(backupDirs)
+                backup = SciCatalog(lastBackupDir)
+                if backup == self:
+                    for f in self._listpaths(lastBackupDir):
+                        os.remove(f)
+                    os.rmdir(lastBackupDir)
 
-        # if the catalog hasn't changed during this session, delete the backup made when it was opened
-        # check if it hasn't changed by comparing it to the backup made when it was opened
-        archivePaths = self._listpaths(self.archive)
-        backupDirs = filter(os.path.isdir, archivePaths)
-        if len(backupDirs) > 0:
-            lastBackupDir = max(backupDirs)
-            backup = SciCatalog(lastBackupDir)
-            if backup == self:
-                for f in self._listpaths(lastBackupDir):
-                    os.remove(f)
-                os.rmdir(lastBackupDir)
-
-        # remove the file showing that the user is accessing the catalog
-        os.remove(self._accessPath)
+            # remove the file showing that the user is accessing the catalog
+            os.remove(self._accessPath)
 
 
     def _setSingle(self, index, col, value=None, errpos=None, errneg=None, ref=None):
@@ -305,11 +316,14 @@ class SciCatalog:
         tinkering with the table entries manually (i.e. via attributes rather than with the object methods).
         """
 
-        # save tables
-        for tbl, path in zip(self.tables, self.paths):
-            tbl.to_csv(path)
+        if not self.readOnly:
+            # save tables
+            for tbl, path in zip(self.tables, self.paths):
+                tbl.to_csv(path)
 
-        self._saveRefDict()
+            self._saveRefDict()
+        else:
+            raise IOError('Cannot save catalog because it was opened in read only mode.')
 
 
     def checkRef(self, refkey):
@@ -347,7 +361,8 @@ class SciCatalog:
 
         self.refDict[refkey] = definition
 
-        self._saveRefDict()
+        if not self.readOnly:
+            self._saveRefDict()
 
 
     def addCol(self, colname):
@@ -404,13 +419,17 @@ class SciCatalog:
     def renameCol(self, oldname, newname):
         for tbl in self.tables:
             tbl.rename(columns={oldname : newname}, inplace=True)
-        self.save()
+
+        if not self.readOnly:
+            self.save()
 
 
     def renameRow(self, oldname, newname):
         for tbl in self.tables:
             tbl.rename(index={oldname : newname}, inplace=True)
-        self.save()
+
+        if not self.readOnly:
+            self.save()
 
 
     def _saveRefDict(self, path=None):
