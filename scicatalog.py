@@ -462,3 +462,16 @@ class SciCatalog:
     @classmethod
     def _tablepaths(cls, path):
         return [os.path.join(path, name) + '.' + cls.fileSuffix for name in cls.tableFiles]
+
+
+def quickval(path, index, col, key='value'):
+    """
+    Grab the value for index/col from the catalog located at path without opening the full catalog. key can be one
+    of ['value', 'errpos', 'errneg', 'ref'].
+    """
+    i = SciCatalog.keys.index(key)
+    tblname = SciCatalog.tableFiles[i]
+    tblpath = os.path.join(path, tblname + '.' + SciCatalog.fileSuffix)
+    tbl = pd.DataFrame.from_csv(tblpath)
+    return tbl.loc[index, col]
+
