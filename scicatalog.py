@@ -28,7 +28,7 @@ class SciCatalog:
     accessFile = 'user_accessing.txt'
 
     def __init__(self, path, values=None, errpos=None, errneg=None, refs=None, refDict={}, index=None, columns=None,
-                 readOnly=False):
+                 readOnly=False, silent=False):
         """
         Creates an empty SciCatalog object by intializing the four pandas DataFrame tables and a reference dictionary
         that are kept synced to the disk as changes are made.
@@ -73,7 +73,7 @@ class SciCatalog:
 
         # either load or create the SciCat table as appropriate
         if os.path.exists(path):
-            if self.readOnly:
+            if self.readOnly and not silent:
                 print("Opening the catalog in read only mode. *You will not be able to save any changes you make to "
                       "the catalog in this mode.* You do not need to call the close() method when finished.")
             else:
@@ -88,9 +88,10 @@ class SciCatalog:
                                     '"close" method (better check with him/her!), you can delete the {a} file in the '
                                     'catalog directory to regain access.'.format(u=user, a=self.accessFile))
                 elif 'archive' not in self.path:
-                    print("IMPORTANT: You MUST use execute the command '{c}.close()' when you are done "
-                          "modifying the {c} catalog or other users will not be able to open and edit it."
-                          "".format(c=self.name))
+                    if not silent:
+                        print("IMPORTANT: You MUST use execute the command '{c}.close()' when you are done "
+                              "modifying the {c} catalog or other users will not be able to open and edit it."
+                              "".format(c=self.name))
                     with open(self._accessPath, 'w') as f:
                         f.write(getpass.getuser())
 
