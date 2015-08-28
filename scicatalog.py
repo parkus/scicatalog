@@ -73,9 +73,10 @@ class SciCatalog:
 
         # either load or create the SciCat table as appropriate
         if os.path.exists(path):
-            if self.readOnly and not silent:
-                print("Opening the catalog in read only mode. *You will not be able to save any changes you make to "
-                      "the catalog in this mode.* You do not need to call the close() method when finished.")
+            if self.readOnly:
+                if not silent:
+                    print("Opening the catalog in read only mode. *You will not be able to save any changes you make to "
+                          "the catalog in this mode.* You do not need to call the close() method when finished.")
             else:
                 # try to prevent possible editing by multiple users at the same time by looking for or creating a file
                 # that just contains the name of the user, to be later removed with the close() method.
