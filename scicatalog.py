@@ -259,8 +259,6 @@ class SciCatalog:
         for i, key in enumerate(self.keys):
             if kwargs[key] is not None:
                 self.tables[i][col][index] = kwargs[key]
-            else:
-                self.tables[i][col][index] = self.nullValues[i]
 
         if 'ref' in kwargs:
             self.checkRef(kwargs['ref'])
