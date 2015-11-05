@@ -147,7 +147,7 @@ class SciCatalog:
         # check that they have the same columns and indices
         if sorted(self.colnames()) != sorted(other.colnames()):
             return False
-        if sorted(self.indices()) != sorted(self.indices()):
+        if sorted(self.indices()) != sorted(other.indices()):
             return False
 
         # compare the values in each column, treating null values as equivalent and just checking if floats are within
