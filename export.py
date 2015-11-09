@@ -116,7 +116,7 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
                         items.append(','.join(refs))
 
         lines.append(' & '.join(items) + '\\\\')
-    lines.append('\\endata')
+    lines.append('\\enddata')
     lines.append('')
 
     # add note legend
@@ -128,8 +128,8 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
     if refkeys is not None and compactrefs:
         entries = []
         for i, ref in enumerate(reflist):
-            entries.append('({}) \\citet{{{}}}'.format(i, ref))
-        reflgnd = '\\tablerefs{' +  '; '.join(entries) + '}}'
+            entries.append('({}) \\citealt{{{}}}'.format(i+1, ref))
+        reflgnd = '\\tablerefs{' +  '; '.join(entries) + '}'
         lines.append(reflgnd)
         lines.append('')
 
@@ -154,7 +154,7 @@ def _tex_fmt(value, errneg, errpos, sigfigs_err, fmt, forcefmt):
             elif 'e' in fmt:
                 left, right, exp = _split_numstr(fmt.format(value))
                 exp = exp.replace('+', '')
-                return '{}.{}\\sn{{{}}}'.format(left, right, exp)
+                return '${}.{}\\sn{{{}}}$'.format(left, right, exp)
             else:
                 raise ValueError('Format {} not understood.'.format(fmt))
     else:
@@ -196,12 +196,12 @@ def _tex_fmt(value, errneg, errpos, sigfigs_err, fmt, forcefmt):
 
         if SN:
             exp = exp.replace('+', '')
-            return '${}_{{{}}}^{{{}}}\\sn{{{}}}'.format(vstr, enstr, epstr,  exp)
+            return '${}_{{-{}}}^{{+{}}}\\sn{{{}}}$'.format(vstr, enstr, epstr,  exp)
         else:
             if enstr == epstr:
                 return '$ {} \\pm {} $'.format(vstr, enstr)
             else:
-                return '${}_{{-{}}}^{{+{}}}$',format(vstr, enstr, epstr)
+                return '${}_{{-{}}}^{{+{}}}$'.format(vstr, enstr, epstr)
 
 
 def _fmt_sig(value, sigfigs):
