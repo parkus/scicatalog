@@ -1,7 +1,9 @@
 scicatalog
 ==========
 
-A module containing a single class for handling catalogs of scientific data in a way that is easily extensible. 
+A module containing a single class for handling catalogs of scientific data in a way that is easily extensible.
+
+Probably the the most valuable aspect of the module is the ability to create nicely formatted AASTex deluxe tables for use in AAS (ApJ, AJ, ...) publications. Sadly, I have not documented these features yet, but you can probably figure them out if you look at the source and save yourself some time!
 
 Currently (2015/07/09) the SciCatalog class handles catalogs of values, their positive and negative uncertainties, and references for those values with methods for easily adding columns and changing values. The catalog is also backed up every time it is loaded under the assumption that it is about to be modified. 
 
