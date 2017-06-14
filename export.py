@@ -3,7 +3,7 @@ import itertools as it
 from string import ascii_lowercase
 
 def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=False, sigfigs_err=2, fmts=None,
-           force_fmt=False, hdr=None):
+           force_fmt=False, hdr=None, hdrnotes=[], datatags=True):
     """
     Format the arrays for inclusion as the body of an AASTEX deluxetable using \input{filename}. The user should
     create the table header separately -- this just produces the body.
@@ -32,6 +32,10 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
     hdr : str
         Optional header to print above the data block -- useful if you want to write you column headings,
         etc. into your code.
+    hdrnotes : list
+        A list of the notes that are associated with the header. This will increment the label for any further notes
+        associated with table elements and include these notes at the start of the full list of notes.
+
 
     Returns
     -------
@@ -57,7 +61,9 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
     for ary in arys:
         if not equal_lens(Ncols, ary):
             raise ValueError('All rows of the input must be the same length.')
-    if fmts is not None:
+    if fmts is None:
+        fmts = ['']*Ncols
+    else:
         assert len(fmts) == Ncols
 
     # determine which columns will have references
@@ -65,12 +71,23 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
         refsbycol = zip(*refkeys)
         hasrefs = [not all(map(_isnull, refcol)) for refcol in refsbycol]
 
+    # prep for possible notes
+    alphabet = iter(ascii_lowercase[len(hdrnotes):])
+    notedict = {}
+    def addnote(note):
+        if note in notedict:
+            mark = notedict[note]
+        else:
+            mark = alphabet.next()
+            notedict[note] = mark
+        return mark
+    map(addnote, hdrnotes)
+
     # go through writing out the table line by line
     lines = [] if hdr is None else [hdr]
-    lines.append('\\startdata')
-    notedict = {}
+    if datatags:
+        lines.append('\\startdata')
     reflist = []
-    alphabet = iter(ascii_lowercase)
     for i in range(Nrows):
         items = []
         for j in range(Ncols):
@@ -84,12 +101,9 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
             # add any note
             if notes is not None:
                 note = notes[i][j]
-                if note in notedict:
-                    mark = notedict[note]
-                else:
-                    mark = alphabet.next()
-                    notedict[mark] = '' if _isnull(note) else note
-                item += '\\tablenotemark{{{}}}'.format(mark)
+                if not _isnull(note):
+                    mark = addnote(note)
+                    item += '\\tablenotemark{{{}}}'.format(mark)
             items.append(item)
 
             # add references
@@ -116,7 +130,8 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
                         items.append(','.join(refs))
 
         lines.append(' & '.join(items) + '\\\\')
-    lines.append('\\enddata')
+    if datatags:
+        lines.append('\\enddata')
     lines.append('')
 
     # add note legend
@@ -196,7 +211,10 @@ def _tex_fmt(value, errneg, errpos, sigfigs_err, fmt, forcefmt):
 
         if SN:
             exp = exp.replace('+', '')
-            return '${}_{{-{}}}^{{+{}}}\\sn{{{}}}$'.format(vstr, enstr, epstr,  exp)
+            if enstr == epstr:
+                return '${} \\pm {} \\sn{{{}}}$'.format(vstr, enstr,  exp)
+            else:
+                return '${}_{{-{}}}^{{+{}}}\\sn{{{}}}$'.format(vstr, enstr, epstr,  exp)
         else:
             if enstr == epstr:
                 return '$ {} \\pm {} $'.format(vstr, enstr)
@@ -210,6 +228,9 @@ def _fmt_sig(value, sigfigs):
     if right and len(right) < sigfigs - 1:
         right += '0' * (sigfigs - 1 - len(right))
         return _join_numstr(left, right, exp)
+    elif not right and len(left) < sigfigs:
+        add_zeros = '0' * (sigfigs - len(left))
+        return _join_numstr(left, add_zeros, exp)
     else:
         return vstr
 
@@ -264,7 +285,7 @@ def _max_sigdig(numstr):
 def _isnull(value):
      if not value:
          return True
-     if type(value) is str:
+     if type(value) in [str, unicode]:
          return value.lower() == 'none'
      else:
          return not isfinite(value)
