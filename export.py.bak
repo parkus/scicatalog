@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 from numpy import isfinite
 from string import ascii_lowercase
 from collections import OrderedDict
@@ -56,7 +55,7 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
             errneg = errpos = err
 
     # check that dimensions all agree
-    arys = [a for a in [values, errneg, errpos, notes, refkeys] if a is not None]
+    arys = filter(lambda a: a is not None, [values, errneg, errpos, notes, refkeys])
     equal_lens = lambda l0, a: all([l0 == l for l in map(len, a)])
     if not equal_lens(Nrows, arys):
         raise ValueError('All input must have the same number of rows.')
@@ -70,7 +69,7 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
 
     # determine which columns will have references
     if refkeys is not None:
-        refsbycol = list(zip(*refkeys))
+        refsbycol = zip(*refkeys)
         hasrefs = [not all(map(_isnull, refcol)) for refcol in refsbycol]
 
     # prep for possible notes
@@ -80,12 +79,11 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
         if note in notedict:
             mark = notedict[note]
         else:
-            mark = next(alphabet)
+            mark = alphabet.next()
             notedict[note] = mark
         return mark
     if hdrnotes is not None:
-        for hdrnote in hdrnotes:
-            addnote(hdrnote)
+        map(addnote, hdrnotes)
 
     # go through writing out the table line by line
     lines = [] if hdr is None else [hdr]
@@ -97,7 +95,7 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
         for j in range(Ncols):
             # make entry
             value, errn, errp = values[i][j], errneg[i][j], errpos[i][j]
-            if isinstance(value, (str, bytes)):
+            if isinstance(value, basestring):
                 item = '\\nodata' if _isnull(value) else value
             else:
                 item = _tex_fmt(value, errn, errp, sigfigs_err, fmts[j], force_fmt)
@@ -127,7 +125,7 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
                                     reflist.append(ref)
                                     k = len(reflist)
                                 klist.append(k)
-                            klist = list(map(str, klist))
+                            klist = map(str, klist)
                             items.append(','.join(klist))
                     else:
                         refs = ['\\citet{{{}}}'.format(r) for r in refs]
@@ -139,7 +137,7 @@ def aastex(filename, values, err=None, notes=None, refkeys=None, compactrefs=Fal
     lines.append('')
 
     # add note legend
-    for note, mark in list(notedict.items()):
+    for note, mark in notedict.items():
         lines.append('\\tablenotetext{{{}}}{{{}}}'.format(mark, note))
     lines.append('')
 
@@ -194,7 +192,7 @@ def _tex_fmt(value, errneg, errpos, sigfigs_err, fmt, forcefmt):
                 raise ValueError('Format {} not understood.'.format(fmt))
     else:
         if not forcefmt:
-            err_sigdig = list(map(_err_sigdig, (errpos, errneg)))
+            err_sigdig = map(_err_sigdig, (errpos, errneg))
             if abs(err_sigdig[0] - err_sigdig[1]) >= sigfigs_err:
                 minsigdig = min(err_sigdig)
             else:
@@ -324,7 +322,7 @@ def _max_sigdig(numstr):
 
 
 def _isnull(value):
-    if isinstance(value, (str, bytes)):
+    if isinstance(value, basestring):
      return value.lower() == 'none'
     if (value != 0) and not value:
      return True

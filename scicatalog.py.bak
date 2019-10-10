@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 import pandas as pd
 import os
 import numpy as np
@@ -120,7 +119,7 @@ class SciCatalog:
             DF = lambda data, val: nullDF(val) if data is None else goodDF(data)
 
             # create tables
-            self.tables = list(map(DF, [values, errpos, errneg, refs], self.nullValues))
+            self.tables = map(DF, [values, errpos, errneg, refs], self.nullValues)
             self.values, self.errpos, self.errneg, self.refs = self.tables
 
             # check that all reference keys are defined
@@ -232,7 +231,7 @@ class SciCatalog:
             # if the catalog hasn't changed during this session, delete the backup made when it was opened
             # check if it hasn't changed by comparing it to the backup made when it was opened
             archivePaths = self._listpaths(self.archive)
-            backupDirs = list(filter(os.path.isdir, archivePaths))
+            backupDirs = filter(os.path.isdir, archivePaths)
             if len(backupDirs) > 0:
                 lastBackupDir = max(backupDirs)
                 backup = SciCatalog(lastBackupDir)
@@ -256,7 +255,7 @@ class SciCatalog:
             raise KeyError("{} is not a column in the table. You must use the 'addCol' method to add a column before "
                            "setting values in it.".format(col))
 
-        kwargs = dict(list(zip(self.keys, [value, errpos, errneg, ref])))
+        kwargs = dict(zip(self.keys, [value, errpos, errneg, ref]))
         for i, key in enumerate(self.keys):
             if kwargs[key] is not None:
                 self.tables[i].at[index, col] = kwargs[key]
@@ -280,7 +279,7 @@ class SciCatalog:
         """
         Print an item from the catalog with value, errors, and reference.
         """
-        print(self.strItem(index, col))
+        print self.strItem(index, col)
 
 
     def backup(self):
@@ -444,7 +443,7 @@ class SciCatalog:
         if path is None:
             path = self.refDictPath
         with open(path, 'w') as f:
-            for key, ref in self.refDict.items():
+            for key, ref in self.refDict.iteritems():
                 f.write('{} : {}\n'.format(key, ref))
 
     @classmethod
