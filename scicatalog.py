@@ -98,7 +98,7 @@ class SciCatalog:
                         f.write(getpass.getuser())
 
             # load in the table data
-            self.tables = [pd.DataFrame.read_csv(p) for p in self.paths]
+            self.tables = [pd.read_csv(p) for p in self.paths]
             self.values, self.errpos, self.errneg, self.refs = self.tables
 
             # load in the reference dictionary
@@ -475,6 +475,6 @@ def quickval(path, index, col, key='value'):
     i = SciCatalog.keys.index(key)
     tblname = SciCatalog.tableFiles[i]
     tblpath = os.path.join(path, tblname + '.' + SciCatalog.fileSuffix)
-    tbl = pd.DataFrame.read_csv(tblpath)
+    tbl = pd.read_csv(tblpath)
     return tbl.loc[index, col]
 
