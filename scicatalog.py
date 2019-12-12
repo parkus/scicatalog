@@ -196,10 +196,10 @@ class SciCatalog:
         """
         data = [value, errpos, errneg, ref]
 
-        iterI, iterC = [hasattr(x, '__iter__') for x in [index, col]]
+        iterI, iterC = [type(x) in [tuple, list] for x in [index, col]]
 
         if iterI and iterC:
-            raise TypeError('Only one of index and col can be iterable.')
+            raise TypeError('Only one of index and col can be a list or tuple.')
 
         def groomLen(n):
             for i in range(len(data)):
